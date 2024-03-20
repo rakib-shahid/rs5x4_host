@@ -4,7 +4,8 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/include"
+                "${workspaceFolder}/hidapi/include",
+                "${workspaceFolder}/libusb/include"
             ],
             "defines": [
                 "_DEBUG",
