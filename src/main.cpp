@@ -1,6 +1,6 @@
 #include <iostream>
 #include <stdio.h>
-#include <hidapi.h>
+#include "hidapi/hidapi.h"
 using namespace std;
 
 int main(){
@@ -15,7 +15,7 @@ int main(){
 
 	// Open the device using the VID, PID,
 	// and optionally the Serial number.
-	handle = hid_open(0x4d8, 0x3f, NULL);
+	handle = hid_open(0xFEDD, 0x0753, NULL);
 	if (!handle) {
 		printf("Unable to open device\n");
 		hid_exit();
