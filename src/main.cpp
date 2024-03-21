@@ -1,9 +1,12 @@
 #include <iostream>
 #include <stdio.h>
+#include <fstream>
+#include <sstream>
 #include "hidapi/hidapi.h"
 using namespace std;
 
 int main(int argc, char *argv[]){
+    
     // wchar_t args[255];
     int res;
 	wchar_t wstr[255];
@@ -23,15 +26,17 @@ int main(int argc, char *argv[]){
 		hid_exit();
  		return 1;
 	}
+    
 	// Read the Manufacturer String
-    res = hid_get_product_string(handle, wstr, 255);
-    printf("Product String: %ls\n", wstr);
-	res = hid_get_manufacturer_string(handle, wstr, 255);
-	printf("Manufacturer String: %ls\n", wstr);
-    unsigned char buf[32];
-    buf[0] = 0x0;
-    buf[1] = 0xFB;
-    buf[2] = 1;
+    // res = hid_get_product_string(handle, wstr, 255);
+    // printf("Product String: %ls\n", wstr);
+	// res = hid_get_manufacturer_string(handle, wstr, 255);
+	// printf("Manufacturer String: %ls\n", wstr);
+    // unsigned char buf[32];
+    // buf[0] = 0x0;
+    // buf[1] = 0xFB;
+    // buf[2] = 1;
+
 
 
     hid_device *device;
@@ -50,20 +55,79 @@ int main(int argc, char *argv[]){
     }
     hid_free_enumeration(first);
 
-    if (argc > 1){
-        cout << argv[1] << endl;
-        char* test = argv[1];
-        for (int i = 3; i < 32; i++){
-            buf[i] = test[i-3];
-        }
-        for (unsigned char x: buf){
-            cout << x << " ";
-        }
-        int result = hid_write(device,buf,32);
-        printf("\nresult = %d",result);
-        if (result == -1){
-            printf("\n%ls\n",hid_error(device));
+    const int ARRAY_SIZE = 32; // Length of the array
+    unsigned char array[ARRAY_SIZE]; // Array to store integers
+
+    // Open the file
+    ifstream file("allinfo.txt");
+    
+    // Check if the file is opened successfully
+    if (!file.is_open()) {
+        cerr << "Error opening the file." << endl;
+        return 1;
+    }
+    
+    string line;
+    int index = 0;
+    int totalIntegers = 0;
+    bool isFirstArray = true;
+
+    // Add 0x0 to the first position of the array
+    array[index++] = 0x0;
+
+    while (getline(file, line, ',')) { // Read each integer separated by comma
+        array[index++] = stoi(line); // Convert line to integer and store in the array
+        ++totalIntegers;
+
+        if (index == ARRAY_SIZE) { // If array is filled
+            // Set the second value based on the condition
+            if (isFirstArray) {
+                array[1] = 0xFD;
+                isFirstArray = false;
+            } else if (totalIntegers >= 8192) { // Last array
+                array[1] = 0xFC;
+            } else {
+                array[1] = 0xFE;
+            }
+
+            // Call hid_send function with the array
+            hid_write(device,array,32);
+
+            // Reset index for next array
+            index = 2;
         }
     }
+
+    // Check if there are remaining integers
+    if (index > 2) {
+        // If it's the last array
+        if (totalIntegers >= 8192) {
+            array[1] = 0xFC;
+        } else {
+            array[1] = 0xFE;
+        }
+
+        // Call hid_send with the remaining integers
+        hid_write(device,array,32);
+    }
+    
+    // Close the file
+    file.close();
+    
+    // if (argc > 1){
+    //     cout << argv[1] << endl;
+    //     char* test = argv[1];
+    //     for (int i = 3; i < 32; i++){
+    //         buf[i] = test[i-3];
+    //     }
+    //     for (unsigned char x: buf){
+    //         cout << x << " ";
+    //     }
+    //     int result = hid_write(device,buf,32);
+    //     printf("\nresult = %d",result);
+    //     if (result == -1){
+    //         printf("\n%ls\n",hid_error(device));
+    //     }
+    // }
     return 0;
 }
