@@ -68,28 +68,24 @@ int main(int argc, char *argv[]){
     }
     
     string line;
-    int index = 0;
+    int index = 2;
     int totalIntegers = 0;
     bool isFirstArray = true;
 
     // Add 0x0 to the first position of the array
-    array[index++] = 0x0;
+    array[0] = 0x0;
 
     while (getline(file, line, ',')) { // Read each integer separated by comma
+        if (isFirstArray) {
+            array[1] = 0xFD;
+            isFirstArray = false;
+        } else {
+            array[1] = 0xFE;
+        }
         array[index++] = stoi(line); // Convert line to integer and store in the array
         ++totalIntegers;
 
         if (index == ARRAY_SIZE) { // If array is filled
-            // Set the second value based on the condition
-            if (isFirstArray) {
-                array[1] = 0xFD;
-                isFirstArray = false;
-            } else if (totalIntegers >= 8192) { // Last array
-                array[1] = 0xFC;
-            } else {
-                array[1] = 0xFE;
-            }
-
             // Call hid_send function with the array
             hid_write(device,array,32);
 
@@ -100,34 +96,12 @@ int main(int argc, char *argv[]){
 
     // Check if there are remaining integers
     if (index > 2) {
-        // If it's the last array
-        if (totalIntegers >= 8192) {
-            array[1] = 0xFC;
-        } else {
-            array[1] = 0xFE;
-        }
-
+        array[1] = 0xFC;
         // Call hid_send with the remaining integers
         hid_write(device,array,32);
     }
     
     // Close the file
     file.close();
-    
-    // if (argc > 1){
-    //     cout << argv[1] << endl;
-    //     char* test = argv[1];
-    //     for (int i = 3; i < 32; i++){
-    //         buf[i] = test[i-3];
-    //     }
-    //     for (unsigned char x: buf){
-    //         cout << x << " ";
-    //     }
-    //     int result = hid_write(device,buf,32);
-    //     printf("\nresult = %d",result);
-    //     if (result == -1){
-    //         printf("\n%ls\n",hid_error(device));
-    //     }
-    // }
     return 0;
 }
