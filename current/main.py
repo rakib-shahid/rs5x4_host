@@ -1,3 +1,4 @@
+from math import floor
 import subprocess
 import time
 from typing import Iterable
@@ -24,13 +25,15 @@ track_info = {
     "is_playing": False,
     "track_name": '',
     "artist_name": '',
-    "image_url": ''
+    "image_url": '',
+    "track_progress": 0
 }
 old_track_info = {
     "is_playing": False,
     "track_name": '',
     "artist_name": '',
-    "image_url": ''
+    "image_url": '',
+    "track_progress": 0
 }
 # spotify function
 def get_current_track_info():
@@ -42,11 +45,13 @@ def get_current_track_info():
         track_info["track_name"] = response["item"]["name"]
         track_info["artist_name"] = response["item"]["artists"][0]["name"]
         track_info["image_url"] = response["item"]["album"]["images"][2]["url"]
+        track_info["track_progress"] = floor(response["progress_ms"] / response["item"]["duration_ms"] * 128)
     except TypeError:
         track_info["is_playing"] = False
         track_info["track_name"] = ""
         track_info["artist_name"] = ""
         track_info["image_url"] = ""
+        track_info["track_progress"] = 0
 #####################################################
 # hid setup
 vendor_id     = 0xFEDD
@@ -78,17 +83,24 @@ def send_raw_report(op,data):
 
     request_data = [0x00] * (report_length - 3) # First byte is Report ID
     request_data[1] = op
-    request_data[3:len(data)] = data
-    if (track_info["is_playing"]):
-        request_data[2] = 1
+    if op == 0xFA:
+        request_data[2] = data
+        if (track_info["track_name"] == old_track_info["track_name"]) and (track_info["artist_name"] == old_track_info["artist_name"]):
+            request_data[3] = 0
+        else:
+            request_data[3] = 1
     else:
-        request_data[2] = 0
-    # print(f"len(request_data) = {len(request_data)}")
+        request_data[3:len(str(data))] = data
+        if (track_info["is_playing"]):
+            request_data[2] = 1
+        else:
+            request_data[2] = 0
+        # print(f"len(request_data) = {len(request_data)}")
+    request_report = bytes(request_data)    
+        
+    
     # print(f"request_data = {request_data}")
-    request_report = bytes(request_data)
-
-    # print("Request:")
-    # print(request_report)
+    # print(f"Request = {request_report}")
 
     try:
         interface.write(request_report)
@@ -289,6 +301,7 @@ def check_song():
         try:
             try:
                 get_current_track_info()
+                # print(f'progress = {track_info["track_progress"]}')
             except Exception as e:
                 print(e)
                 print("getting new token")
@@ -361,6 +374,7 @@ while True:
                     i += 1
                 else:
                     send_raw_report(0xFF, bytes(clean_song_string(cycleString(outString,i)[:18]),'utf-8'))
+            send_raw_report(0xFA,track_info["track_progress"])
                 
         else:
             redraw = False
