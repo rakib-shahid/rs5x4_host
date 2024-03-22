@@ -217,7 +217,7 @@ def get_image_data_new(image_url):
     hid_messages = []
     hidmessages = []
     i = 0
-    print(all_data)
+    # print(all_data)
     f = open('allinfo.txt', 'w')
     f.write(str(all_data).replace('[','').replace(']',''))
     while i < len(all_data):
@@ -277,7 +277,7 @@ def image_hid():
     #     i+= 1
     subprocess.call('./sendhidmessages.exe')
     threads.clear()
-    print("image_hid thread done")
+    # print("image_hid thread done")
 
 ###################################
 # IMPORTANT FUNCTION
@@ -331,14 +331,14 @@ song_change_thread.start()
 ###################################
 # IMPORTANT FUNCTION
 def clean_song_string(song_string):
-    # og_regex = r'[^\x00-\x7F|]'
+    # og_regex = r'[^\w\s\'’`!@#$%^&*()_+\-=\[\]{};\\:"|,.<>\/?♫]'
     og_regex = r'[^\x00-\x7F\♫]'
     cleaned_string = re.sub(og_regex, '?', song_string)
     # print(cleaned_string)
     return cleaned_string
 
 idle_sent = False
-
+redraw = False
 while True:
     try:
         
@@ -352,6 +352,10 @@ while True:
                 send_raw_report(0xFF, bytes(clean_song_string(outString[:18]),'utf-8'))
                 cycled = outString
             else:
+                if not redraw:
+                    # print("redrew")
+                    send_raw_report(0xFB,bytes("redraw",'utf-8'))
+                    redraw = True
                 if len(outString) > 18:
                     send_raw_report(0xFF,bytes(clean_song_string(cycleString(outString,i)[:18]),'utf-8'))
                     i += 1
@@ -359,6 +363,7 @@ while True:
                     send_raw_report(0xFF, bytes(clean_song_string(cycleString(outString,i)[:18]),'utf-8'))
                 
         else:
+            redraw = False
             if not idle_sent:
                 send_raw_report(0xFF, bytes("",'utf-8'))
                 idle_sent = True
