@@ -85,7 +85,7 @@ def send_raw_report(op,data):
     request_data[1] = op
     if op == 0xFA:
         request_data[2] = data
-        if (track_info["track_name"] == old_track_info["track_name"]) and (track_info["artist_name"] == old_track_info["artist_name"]):
+        if (track_info["track_progress"] < old_track_info["track_progress"]):
             request_data[3] = 0
         else:
             request_data[3] = 1
