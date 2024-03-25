@@ -287,7 +287,7 @@ def image_hid():
     #     else:
     #         send_image_data(bytes(hidmessages[i]))
     #     i+= 1
-    subprocess.call('./sendhidmessages.exe')
+    subprocess.call('./sendhidmessages.exe',stdout=subprocess.DEVNULL)
     threads.clear()
     # print("image_hid thread done")
 
