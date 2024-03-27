@@ -18,7 +18,7 @@ import threading
 # spotify setup
 SPOTIPY_REDIRECT_URI='https://localhost:8888/callback'
 
-auth_manager = spotipy.oauth2.SpotifyOAuth(client_id=spotifykeys.client_id, client_secret=spotifykeys.client_secret, redirect_uri= SPOTIPY_REDIRECT_URI,scope='user-read-currently-playing', show_dialog=True)
+auth_manager = spotipy.oauth2.SpotifyOAuth(client_id=spotifykeys.client_id, client_secret=spotifykeys.client_secret, redirect_uri= SPOTIPY_REDIRECT_URI,scope='user-read-currently-playing', show_dialog=True, cache_path='./tokens.txt')
 spotify = spotipy.Spotify(auth_manager=auth_manager)
 
 track_info = {
