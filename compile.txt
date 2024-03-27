@@ -1,1 +1,1 @@
-g++ -std=c++11 -Iinclude src/main.cpp -Llib -lhidapi -o bin/my_program.exe
+g++ -std=c++11 -Iinclude src/main.cpp -Llib -lhidapi -o bin/my_program.exe -mwindows
