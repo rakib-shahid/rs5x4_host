@@ -1,2 +1,0 @@
-rshost\Scripts\activate
-python main.py
