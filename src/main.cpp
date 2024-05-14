@@ -75,7 +75,7 @@ int main(int argc, char *argv[]){
             array[1] = 0xFD;
             isFirstArray = false;
         } else {
-            array[1] = 0xFE;
+            array[1] = 0xEE;
         }
         array[index++] = stoi(line); // Convert line to integer and store in the array
         ++totalIntegers;

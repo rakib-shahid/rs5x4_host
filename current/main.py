@@ -128,7 +128,7 @@ def send_image_data(data,first = None,last=None):
     elif (last == True):
         request_data[1] = 0xFC
     else:
-        request_data[1] = 0xFE
+        request_data[1] = 0xEE
     request_data[2:len(data)] = data
     # print(f"len(request_data) = {len(request_data)}")
     print(f"image_data = {request_data}")
@@ -195,7 +195,7 @@ class ImageSender:
 
         # set up message header
         request = bytearray([0] * report_length)
-        request[1] = 0xFE
+        request[1] = 0xEE
         n = 30  # whatever this ends up being
 
         # send data re-using the buffer
