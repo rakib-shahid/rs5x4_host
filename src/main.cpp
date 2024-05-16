@@ -19,7 +19,7 @@ int main(int argc, char *argv[]){
 	res = hid_init();
     
     
-    
+    cout << "TESTING" << endl;
 	
 
 
