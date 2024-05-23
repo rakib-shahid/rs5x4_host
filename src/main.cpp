@@ -20,7 +20,7 @@ int main(int argc, char *argv[]){
 	res = hid_init();
     
     
-    fmt::print("TESTING fmt PRINT");
+    // fmt::print("TESTING fmt PRINT");
 	
 
 
@@ -32,25 +32,25 @@ int main(int argc, char *argv[]){
     int usage = 0x61;
     first = hid_enumerate(vid, pid);
     info = first;
-    printf("enumerating\n");
+    // printf("enumerating\n");
     while (info) {
-        printf("Name: %ls, Usage: %d, Usage Page: %d\n", info->manufacturer_string, info->usage, info->usage_page);
+        // printf("Name: %ls, Usage: %d, Usage Page: %d\n", info->manufacturer_string, info->usage, info->usage_page);
         if (info->usage_page == usage_page && info->usage == usage) {
-            printf("found hid device\n");
+            // printf("found hid device\n");
             device = hid_open_path(info->path);
             break;
         }
         info = info->next;
     }
-    std::cout << "device is: " << device << std::endl;
+    // std::cout << "device is: " << device << std::endl;
     // fmt::print("device is: {}\n", device);
     hid_free_enumeration(first);
 
     // Read the Manufacturer String
-    res = hid_get_product_string(device, wstr, 255);
-    printf("Product String: %ls\n", wstr);
-	res = hid_get_manufacturer_string(device, wstr, 255);
-	printf("Manufacturer String: %ls\n", wstr);
+    // res = hid_get_product_string(device, wstr, 255);
+    // printf("Product String: %ls\n", wstr);
+	// res = hid_get_manufacturer_string(device, wstr, 255);
+	// printf("Manufacturer String: %ls\n", wstr);
 
     const int ARRAY_SIZE = 32; // Length of the array
     unsigned char array[32]; // Array to store integers
@@ -83,8 +83,8 @@ int main(int argc, char *argv[]){
         ++totalIntegers;
         if (index == ARRAY_SIZE) { // If array is filled
             // Call hid_send function with the array
-            std::cout << device << std::endl;
-            std::cout << &array << std::endl;
+            // std::cout << device << std::endl;
+            // std::cout << &array << std::endl;
             hid_write(device,array,32);
             hid_error(device);
 
