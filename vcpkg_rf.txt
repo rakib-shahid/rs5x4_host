@@ -1,0 +1,5 @@
+install
+cpr
+fmt
+hidapi
+nlohmann-json
