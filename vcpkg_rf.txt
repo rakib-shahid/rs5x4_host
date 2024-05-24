@@ -1,5 +1,6 @@
 install
 cpr
-fmt
 hidapi
 nlohmann-json
+httplib
+stb
