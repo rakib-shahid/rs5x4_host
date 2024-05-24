@@ -1,6 +1,0 @@
-install
-cpr
-hidapi
-nlohmann-json
-httplib
-stb
