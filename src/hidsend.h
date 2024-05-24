@@ -23,6 +23,50 @@ int send_data(int op, hid_device *handle, unsigned char *data, int length) {
     return 0;
 }
 
+int send_track_string(bool is_playing, hid_device *handle, unsigned char *data, int length) {
+    const int ARRAY_SIZE = 32; // Length of the array
+    unsigned char array[ARRAY_SIZE]; // Array to store integers
+
+    // test data
+    // set data to be ['h','e','l','l','o']
+    unsigned char test[5] = {'h','e','l','l','o'};
+    // print out data
+    for (int i = 0; i < 5; i++) {
+        std::cout << "data[i]: " << data[i] << std::endl;
+    }
+    
+    
+
+    // Add 0x0 to the first position of the array
+    array[0] = 0x0;
+    array[1] = 0xFF; // Operation code
+    if (is_playing) {
+        array[2] = 0x01;
+    } else {
+        array[2] = 0x0;
+    }
+    for (int i = 3; i < 8; i++) {
+        array[i] = test[i - 3];
+    }
+    // copy the data into the array
+    // for (int i = 0; i < 28; i++) {
+    //     // print out indices for each
+    //     std::cout << "i: " << i << std::endl;
+    //     std::cout << "data[i]: " << data[i] << std::endl;
+    //     std::cout << "array[i + 3]: " << array[i + 3] << std::endl;
+    //     array[i + 3] = data[i];
+    // }
+
+
+    int res;
+    res = hid_write(handle, array, ARRAY_SIZE);
+    if (res < 0) {
+        printf("Unable to write()\n");
+        return -1;
+    }
+    return 0;
+}
+
 int send_progress(hid_device *handle, int progress, bool rewrite) {
     const int ARRAY_SIZE = 32; // Length of the array
     unsigned char array[ARRAY_SIZE]; // Array to store integers
