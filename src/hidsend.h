@@ -5,9 +5,41 @@
 #include "hidapi/hidapi.h"
 using namespace std;
 
-int send_data(hid_device *handle, unsigned char *data, int length) {
+int send_data(int op, hid_device *handle, unsigned char *data, int length) {
+    const int ARRAY_SIZE = 32; // Length of the array
+    unsigned char array[ARRAY_SIZE]; // Array to store integers
+
+    // Add 0x0 to the first position of the array
+    array[0] = 0x0;
+    array[1] = op; // Operation code
+
+
     int res;
-    res = hid_write(handle, data, length);
+    res = hid_write(handle, array, ARRAY_SIZE);
+    if (res < 0) {
+        printf("Unable to write()\n");
+        return -1;
+    }
+    return 0;
+}
+
+int send_progress(hid_device *handle, int progress, bool rewrite) {
+    const int ARRAY_SIZE = 32; // Length of the array
+    unsigned char array[ARRAY_SIZE]; // Array to store integers
+
+    // Add 0x0 to the first position of the array
+    array[0] = 0x0;
+    array[1] = 0xFA; // Operation code
+    array[2] = progress; // Progress
+    // if rewrite is true, send byte telling screen to wipe old progress b ar
+    if (rewrite) {
+        array[3] = 0;
+    } else {
+        array[3] = 1;
+    }
+
+    int res;
+    res = hid_write(handle, array, ARRAY_SIZE);
     if (res < 0) {
         printf("Unable to write()\n");
         return -1;

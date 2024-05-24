@@ -69,7 +69,13 @@ int main() {
             // check if response is null
             if (response != NULL) {
                 track.is_playing = response["is_playing"];
-                track.progress_ms = response["progress_ms"];
+                
+                // round down to the nearest integer after dividing progress by total duration
+                int progress = response["progress_ms"];
+                int duration = response["item"]["duration_ms"];
+                track.progress_ms = progress / ((double)(duration)) * 128;
+
+
                 track.track_name = response["item"]["name"];
                 track.artist_name = response["item"]["artists"][0]["name"];
                 track.image_url = response["item"]["album"]["images"][0]["url"];
@@ -105,10 +111,10 @@ int main() {
                     std::cout << "Track: " << track.track_name << std::endl;
                     std::cout << "Artist: " << track.artist_name << std::endl;
                     std::cout << "Image URL: " << track.image_url << std::endl;
-                    // std::cout << "Progress: " << track.progress_ms << " ms" << std::endl;
                     std::cout << std::endl;
                 }
-                std::cout << "Progress: " << track.progress_ms << " ms" << std::endl;
+                // send progress
+                send_progress(device, track.progress_ms, track.progress_ms < old_track.progress_ms);
                 std::cout << std::endl;
             }
             
