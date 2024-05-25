@@ -47,7 +47,7 @@ int main() {
         return 1;
     }
 
-    std::string access_token = getSpotifyToken();
+    std::string access_token = getAccessToken();
 
     ///////////////////////////////////////////////////////////////////////
     Track track;
@@ -62,7 +62,7 @@ int main() {
     // Create a thread that constantly updates the track struct
     std::thread update_track_thread([&]() {
         while (true) {
-            nlohmann::json response = getCurrentlyPlayingTrack(access_token);
+            nlohmann::json response = getCurrentTrack(access_token);
             // Check if response is null
             if (!response.is_null()) {
                 track.is_playing = response["is_playing"];
