@@ -132,7 +132,7 @@ nlohmann::json getCurrentTrack(std::string& access_token) {
         if (!access_token.empty()) {
             return getCurrentTrack(access_token);
         }
-    } else {
+    } else if (response.status_code != 204){
         std::cerr << "Error: " << response.status_code << " - " << response.text << std::endl;
     }
     return nullptr;

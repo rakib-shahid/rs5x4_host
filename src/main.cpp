@@ -7,6 +7,7 @@
 #include <thread>
 #include <cstdlib>
 #include <cctype>
+#include <mutex>
 
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
@@ -24,15 +25,17 @@ struct Track {
     std::string artist_name;
     std::string image_url;
     std::string full_track_name = u8"";
-    unsigned char song_string_arr[];
+    vector<unsigned char> song_string_vector;
 };
 
-void cycle_array(int* index, const unsigned char* input, size_t input_length, unsigned char* output, size_t output_length) {
+void cycle_vector(int* index, const std::vector<unsigned char>& input, unsigned char* output, size_t output_length) {
+    size_t input_length = input.size();
+
     // Ensure the output array is large enough
     if (output_length < 1) return;
 
     if (input_length <= output_length) {
-        // If the input array is shorter than or equal to output_length characters, copy the entire array
+        // If the input vector is shorter than or equal to output_length characters, copy the entire vector
         for (size_t i = 0; i < input_length; ++i) {
             output[i] = input[i];
         }
@@ -46,10 +49,10 @@ void cycle_array(int* index, const unsigned char* input, size_t input_length, un
 
         // Copy the next output_length characters to the output array
         for (size_t i = 0; i < output_length; ++i) {
-            // Calculate the actual position in the input array, considering the rotation
+            // Calculate the actual position in the input vector, considering the rotation
             size_t pos = (effective_index + i) % input_length;
 
-            // Copy from the input array
+            // Copy from the input vector
             output[i] = input[pos];
         }
 
@@ -97,7 +100,6 @@ int main() {
         std::cout << "Failed to read Spotify credentials." << std::endl;
         return 1;
     }
-    SetConsoleOutputCP(65001);
     std::string access_token = getAccessToken();
 
     ///////////////////////////////////////////////////////////////////////
@@ -109,6 +111,7 @@ int main() {
     int pid = 0x0753;
     int res = 0;
     int song_string_index = 0;
+    std::mutex mutex; 
     hid_device* device = open_keyboard(vid, pid);
 
     unsigned char song_string[18];
@@ -117,59 +120,76 @@ int main() {
     // Create a thread that constantly updates the track struct
     std::thread update_track_thread([&]() {
         while (true) {
-            nlohmann::json response = getCurrentTrack(access_token);
-            // Check if response is null
-            if (!response.is_null()) {
-                track.is_playing = response["is_playing"];
-                // Round down to the nearest integer after dividing progress by total duration
-                int progress = response["progress_ms"];
-                int duration = response["item"]["duration_ms"];
-                track.progress_ms = static_cast<int>(progress / static_cast<double>(duration) * 128);
-                track.track_name = response["item"]["name"];
-                track.artist_name = response["item"]["artists"][0]["name"];
-                track.image_url = response["item"]["album"]["images"][0]["url"];
-                track.full_track_name = u8" " + track.artist_name + " - " + track.track_name;
-                track.full_track_name = filter_string(track.full_track_name);
-                // copy music note into the song_string_arr array
-                track.song_string_arr[0] = 0xE2;
-                track.song_string_arr[1] = 0x99;
-                track.song_string_arr[2] = 0xAB;
-                // copy characters of the full track name into the song_string array
-                for (int i = 0; i < track.full_track_name.length(); i++) {
-                    track.song_string_arr[i+3] = track.full_track_name[i];
-                }
-                // print the song_string_arr array
-                for (int i = 0; i < 3+track.full_track_name.length(); i++) {
-                    std::cout << track.song_string_arr[i];
-                }
-                std::cout << std::endl;
-                
-                if (track.full_track_name != old_track.full_track_name) {
-                    song_string_index = 0;
-                }
-                // Check if image URL is different from the old track
-                if (track.image_url != old_track.image_url) {
-                    // Download the image and convert it to RGB565 format
-                    std::vector<uint8_t> rgb565_data = downloadAndConvertToRGB565(track.image_url);
-                    // Send the image data to the device
-                    res = send_image_data(device, rgb565_data);
-                    if (res < 0) {
-                        std::cout << "Unable to send image data." << std::endl;
-                        device = open_keyboard(vid, pid);
+            try
+            {
+                nlohmann::json response = getCurrentTrack(access_token);
+                // Check if response is null
+                if (!response.is_null()) {
+                    
+                    track.is_playing = response["is_playing"];
+                    // Round down to the nearest integer after dividing progress by total duration
+                    int progress = response["progress_ms"];
+                    int duration = response["item"]["duration_ms"];
+                    track.progress_ms = static_cast<int>(progress / static_cast<double>(duration) * 128);
+                    track.track_name = response["item"]["name"];
+                    track.artist_name = response["item"]["artists"][0]["name"];
+                    track.image_url = response["item"]["album"]["images"][0]["url"];
+                    
+                    track.full_track_name = u8" " + track.artist_name + " - " + track.track_name;
+                    track.full_track_name = filter_string(track.full_track_name);
+                    // std::cout << track.full_track_name << std::endl;
+                    
+                    
+                    if (track.full_track_name != old_track.full_track_name) {
+                        song_string_index = 0;
+                        mutex.lock();
+                        track.song_string_vector.clear();
+                        // copy music note into the song_string_arr array
+                        track.song_string_vector.push_back(0xE2);
+                        track.song_string_vector.push_back(0x99);
+                        track.song_string_vector.push_back(0xAB);
+                        // copy characters of the full track name into the song_string array
+                        for (int i = 0; i < track.full_track_name.length(); i++) {
+                            track.song_string_vector.push_back(track.full_track_name[i]);
+                        }
+                        // print the song_string_arr array
+                        // for (int i = 0; i < 3+track.full_track_name.length(); i++) {
+                        //     std::cout << track.song_string_vector[i];
+                        // }
+                        // std::cout << std::endl;
+                        mutex.unlock();
+                        }
+                    // Check if image URL is different from the old track
+                    if (track.image_url != old_track.image_url) {
+                        // Download the image and convert it to RGB565 format
+                        std::vector<uint8_t> rgb565_data = downloadAndConvertToRGB565(track.image_url);
+                        // Send the image data to the device
+                        res = send_image_data(device, rgb565_data);
+                        if (res < 0) {
+                            std::cout << "Unable to send image data." << std::endl;
+                            device = open_keyboard(vid, pid);
+                        }
                     }
+                } else {
+                    track.is_playing = false;
                 }
-            } else {
-                track.is_playing = false;
+                std::this_thread::sleep_for(std::chrono::milliseconds(750));
+                old_track = track;
             }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            old_track = track;
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+            
         }
     });
 
     // Create a separate thread that prints out the track info every 1/3 of a second
     std::thread update_device_thread([&]() {
         while (true) {
-            if (track.is_playing) {
+            try
+            {
+                if (track.is_playing) {
                 // // print out the index
                 // std::cout << "Index: " << song_string_index << std::endl;
                 // // print out the song_string array
@@ -185,7 +205,9 @@ int main() {
                         device = open_keyboard(vid, pid);
                     }
                     else {
-                        cycle_array(&song_string_index, track.song_string_arr, 3+track.full_track_name.length(),song_string, 18);
+                        mutex.lock();
+                        cycle_vector(&song_string_index, track.song_string_vector, song_string, 18);
+                        mutex.unlock();
                     }
                     redraw = true;
                 } else {
@@ -205,7 +227,9 @@ int main() {
                         device = open_keyboard(vid, pid);
                     }
                     else {
-                        cycle_array(&song_string_index, track.song_string_arr, 3+track.full_track_name.length(),song_string, 18);
+                        mutex.lock();
+                        cycle_vector(&song_string_index, track.song_string_vector, song_string, 18);
+                        mutex.unlock();
                     }
                 }
                 sent_not_playing = false;
@@ -240,8 +264,15 @@ int main() {
                     std::cout << "No track currently playing." << std::endl;
                 }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(333));
-        }
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+            
+        } 
     });
 
     update_track_thread.join();
