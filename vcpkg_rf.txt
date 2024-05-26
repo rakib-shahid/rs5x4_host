@@ -1,0 +1,6 @@
+install
+cpr
+hidapi
+nlohmann-json
+cpp-httplib
+stb
