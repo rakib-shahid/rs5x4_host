@@ -3,4 +3,4 @@ spotifykeys.txt
 token.txt
 tokens.txt
 refresh_token.txt
-/build/**
+build/
