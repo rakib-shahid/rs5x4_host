@@ -6,6 +6,7 @@
 #include <vector>
 #include <thread>
 #include <cstdlib>
+#include <cctype>
 
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
@@ -23,20 +24,69 @@ struct Track {
     std::string artist_name;
     std::string image_url;
     std::string full_track_name = u8"";
+    unsigned char song_string_arr[];
 };
 
-void cycle_song_string(unsigned char* song_string, Track track) {
-    std::string temp = "";
-    temp = track.full_track_name;
-    temp += temp[0];
-    temp.erase(0, 1);
-    for (int i = 0; i < 29; i++) {
-        song_string[i] = temp[i];
+void cycle_array(int* index, const unsigned char* input, size_t input_length, unsigned char* output, size_t output_length) {
+    // Ensure the output array is large enough
+    if (output_length < 1) return;
+
+    if (input_length <= output_length) {
+        // If the input array is shorter than or equal to output_length characters, copy the entire array
+        for (size_t i = 0; i < input_length; ++i) {
+            output[i] = input[i];
+        }
+        // Fill the rest of the output array with spaces
+        for (size_t i = input_length; i < output_length; ++i) {
+            output[i] = ' ';
+        }
+    } else {
+        // Calculate the effective starting position after rotation
+        int effective_index = *index % input_length;
+
+        // Copy the next output_length characters to the output array
+        for (size_t i = 0; i < output_length; ++i) {
+            // Calculate the actual position in the input array, considering the rotation
+            size_t pos = (effective_index + i) % input_length;
+
+            // Copy from the input array
+            output[i] = input[pos];
+        }
+
+        // Increment the index
+        (*index)++;
     }
-    // Print out the song_string and full_track_name
-    std::cout << "song_string: " << song_string << std::endl;
-    std::cout << "full_track_name: " << track.full_track_name << std::endl;
 }
+
+std::string filter_string(const std::string& input) {
+    std::string output;
+    size_t length = input.length();
+    
+    for (size_t i = 0; i < length; ++i) {
+        unsigned char ch = static_cast<unsigned char>(input[i]);
+
+        // Check if the character is a printable ASCII character (range 32-126)
+        if (std::isprint(ch) && ch <= 126) {
+            output += ch;
+        }
+        // else if (ch == 0xE2 && (i + 2 < length) && 
+        //            static_cast<unsigned char>(input[i + 1]) == 0x99 && 
+        //            static_cast<unsigned char>(input[i + 2]) == 0xAB) {
+        //     // Check if it's the music note character (UTF-8 sequence: 0xE2 0x99 0xAB)
+        //     output += 0xE2;
+        //     output += 0x99;
+        //     output += 0xAB;
+        //     i += 2; // Skip the next two bytes
+        // } 
+        else {
+            output += '?';
+        }
+    }
+
+    
+    return output;
+}
+
 
 bool operator==(const Track& lhs, const Track& rhs) {
     return lhs.track_name == rhs.track_name && lhs.artist_name == rhs.artist_name;
@@ -44,9 +94,10 @@ bool operator==(const Track& lhs, const Track& rhs) {
 
 int main() {
     if (!readSpotifyCredentials("spotifykeys.txt")) {
+        std::cout << "Failed to read Spotify credentials." << std::endl;
         return 1;
     }
-
+    SetConsoleOutputCP(65001);
     std::string access_token = getAccessToken();
 
     ///////////////////////////////////////////////////////////////////////
@@ -56,8 +107,12 @@ int main() {
     bool redraw = false;
     int vid = 0xFEDD;
     int pid = 0x0753;
+    int res = 0;
+    int song_string_index = 0;
     hid_device* device = open_keyboard(vid, pid);
-    unsigned char song_string[29];
+
+    unsigned char song_string[18];
+    // print if device is null
     
     // Create a thread that constantly updates the track struct
     std::thread update_track_thread([&]() {
@@ -73,16 +128,35 @@ int main() {
                 track.track_name = response["item"]["name"];
                 track.artist_name = response["item"]["artists"][0]["name"];
                 track.image_url = response["item"]["album"]["images"][0]["url"];
-                track.full_track_name = u8"" + track.artist_name + " - " + track.track_name;
-
+                track.full_track_name = u8" " + track.artist_name + " - " + track.track_name;
+                track.full_track_name = filter_string(track.full_track_name);
+                // copy music note into the song_string_arr array
+                track.song_string_arr[0] = 0xE2;
+                track.song_string_arr[1] = 0x99;
+                track.song_string_arr[2] = 0xAB;
+                // copy characters of the full track name into the song_string array
+                for (int i = 0; i < track.full_track_name.length(); i++) {
+                    track.song_string_arr[i+3] = track.full_track_name[i];
+                }
+                // print the song_string_arr array
+                for (int i = 0; i < 3+track.full_track_name.length(); i++) {
+                    std::cout << track.song_string_arr[i];
+                }
+                std::cout << std::endl;
+                
+                if (track.full_track_name != old_track.full_track_name) {
+                    song_string_index = 0;
+                }
                 // Check if image URL is different from the old track
                 if (track.image_url != old_track.image_url) {
                     // Download the image and convert it to RGB565 format
                     std::vector<uint8_t> rgb565_data = downloadAndConvertToRGB565(track.image_url);
-                    // Print out the size of the rgb565_data
-                    std::cout << "Size of rgb565_data: " << rgb565_data.size() << std::endl;
                     // Send the image data to the device
-                    send_image_data(device, rgb565_data);
+                    res = send_image_data(device, rgb565_data);
+                    if (res < 0) {
+                        std::cout << "Unable to send image data." << std::endl;
+                        device = open_keyboard(vid, pid);
+                    }
                 }
             } else {
                 track.is_playing = false;
@@ -96,35 +170,71 @@ int main() {
     std::thread update_device_thread([&]() {
         while (true) {
             if (track.is_playing) {
+                // // print out the index
+                // std::cout << "Index: " << song_string_index << std::endl;
+                // // print out the song_string array
+                // for (int i = 0; i < 18; i++) {
+                //     std::cout << song_string[i];
+                // }
+                // std::cout << std::endl;
                 // Check if new track is different from old track
                 if (track.full_track_name != old_track.full_track_name) {
-                    send_track_string(true, device, song_string, 29);
+                    res = send_track_string(true, device, song_string, 18);
+                    if (res < 0) {
+                        std::cout << "Unable to send track string." << std::endl;
+                        device = open_keyboard(vid, pid);
+                    }
+                    else {
+                        cycle_array(&song_string_index, track.song_string_arr, 3+track.full_track_name.length(),song_string, 18);
+                    }
                     redraw = true;
                 } else {
                     if (!redraw) {
                         std::cout << "Redrawing screen." << std::endl;
                         unsigned char dummy_data[1] = {0x00};
-                        send_data(0xFB, device, dummy_data, 11);
+                        res = send_data(0xFB, device, dummy_data, 11);
+                        if (res < 0) {
+                            std::cout << "Unable to redraw screen." << std::endl;
+                            device = open_keyboard(vid, pid);
+                        }
                         redraw = true;
                     }
-                    send_track_string(true, device, song_string, 29);
+                    res = send_track_string(true, device, song_string, 18);
+                    if (res < 0) {
+                        std::cout << "Unable to send track string." << std::endl;
+                        device = open_keyboard(vid, pid);
+                    }
+                    else {
+                        cycle_array(&song_string_index, track.song_string_arr, 3+track.full_track_name.length(),song_string, 18);
+                    }
                 }
                 sent_not_playing = false;
                 // Send progress
-                send_progress(device, track.progress_ms, track.progress_ms < old_track.progress_ms);
-                // Send track name
-                // Copy the track name to the song_string
-                for (int i = 0; i < 29; i++) {
-                    song_string[i] = 0x20;
+                res = send_progress(device, track.progress_ms, track.progress_ms < old_track.progress_ms);
+                if (res < 0) {
+                    std::cout << "Unable to send progress." << std::endl;
+                    device = open_keyboard(vid, pid);
                 }
+                
             } else {
+                if (song_string_index != 0) {
+                    song_string_index = 0;
+                }
                 if (!sent_not_playing) {
-                    send_progress(device, 0, true);
+                    res = send_progress(device, 0, true);
+                    if (res < 0) {
+                        std::cout << "Unable to send progress." << std::endl;
+                        device = open_keyboard(vid, pid);
+                    }
                     // Fill song_string with spaces
-                    for (int i = 0; i < 29; i++) {
+                    for (int i = 0; i < 18; i++) {
                         song_string[i] = 0x20;
                     }
-                    send_track_string(false, device, song_string, 29);
+                    res = send_track_string(false, device, song_string, 18);
+                    if (res < 0) {
+                        std::cout << "Unable to send track string." << std::endl;
+                        device = open_keyboard(vid, pid);
+                    }
                     sent_not_playing = true;
                     redraw = false;
                     std::cout << "No track currently playing." << std::endl;

@@ -17,7 +17,7 @@ int send_data(int op, hid_device *handle, unsigned char *data, int length) {
     int res;
     res = hid_write(handle, array, ARRAY_SIZE);
     if (res < 0) {
-        printf("Unable to write()\n");
+        printf("Unable to write data\n");
         return -1;
     }
     return 0;
@@ -27,14 +27,16 @@ int send_track_string(bool is_playing, hid_device *handle, unsigned char *data, 
     const int ARRAY_SIZE = 32; // Length of the array
     unsigned char array[ARRAY_SIZE]; // Array to store integers
 
-    // test data
-    // set data to be ['h','e','l','l','o']
-    unsigned char test[5] = {'h','e','l','l','o'};
-    // print out data
-    for (int i = 0; i < 5; i++) {
-        std::cout << "data[i]: " << data[i] << std::endl;
-    }
+    // // test data
+    // // set data to be ['h','e','l','l','o']
+    // unsigned char test[5] = {'h','e','l','l','o'};
+    // music note ♫
+    // unsigned char music_note[] = {0xE2, 0x99, 0xAB};
     
+    // // copy the music note into the array
+    // for (int i = 0; i < 3; i++) {
+    //     array[i + 3] = music_note[i];
+    // }
     
 
     // Add 0x0 to the first position of the array
@@ -45,23 +47,25 @@ int send_track_string(bool is_playing, hid_device *handle, unsigned char *data, 
     } else {
         array[2] = 0x0;
     }
-    for (int i = 3; i < 8; i++) {
-        array[i] = test[i - 3];
-    }
-    // copy the data into the array
-    // for (int i = 0; i < 28; i++) {
-    //     // print out indices for each
-    //     std::cout << "i: " << i << std::endl;
-    //     std::cout << "data[i]: " << data[i] << std::endl;
-    //     std::cout << "array[i + 3]: " << array[i + 3] << std::endl;
-    //     array[i + 3] = data[i];
+    // for (int i = 3; i < 8; i++) {
+    //     array[i] = test[i - 3];
     // }
+    // copy the data into the array
+    for (int i = 0; i < 18; i++) {
+        // check if the data is a music note
+
+        // print out indices for each
+        // std::cout << "i: " << i << std::endl;
+        // std::cout << "data[i]: " << data[i] << std::endl;
+        // std::cout << "array[i + 3]: " << array[i + 3] << std::endl;
+        array[i + 3] = data[i];
+    }
 
 
     int res;
     res = hid_write(handle, array, ARRAY_SIZE);
     if (res < 0) {
-        printf("Unable to write()\n");
+        printf("Unable to write track string\n");
         return -1;
     }
     return 0;
@@ -85,7 +89,7 @@ int send_progress(hid_device *handle, int progress, bool rewrite) {
     int res;
     res = hid_write(handle, array, ARRAY_SIZE);
     if (res < 0) {
-        printf("Unable to write()\n");
+        printf("Unable to write progress\n");
         return -1;
     }
     return 0;
@@ -100,9 +104,19 @@ hid_device* open_keyboard(int vid, int pid) {
     hid_device_info *info;
     first = hid_enumerate(vid, pid);
     info = first;
+    bool no_device = false;
+    // print if info is null
     printf("enumerating\n");
+    while (info == NULL){
+        if (no_device) {
+            printf("info is null, waiting for device\n");
+        }
+        first = hid_enumerate(vid, pid);
+        info = first;
+    }
+    
     while (info) {
-        printf("Name: %ls, Usage: %d, Usage Page: %d\n", info->manufacturer_string, info->usage, info->usage_page);
+        // printf("Name: %ls, Usage: %d, Usage Page: %d\n", info->manufacturer_string, info->usage, info->usage_page);
         if (info->usage_page == usage_page && info->usage == usage) {
             printf("found hid device\n");
             device = hid_open_path(info->path);
@@ -114,11 +128,12 @@ hid_device* open_keyboard(int vid, int pid) {
     return device;
 }
 
-void send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
+int send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
     const int ARRAY_SIZE = 32; // Length of the array
     unsigned char array[ARRAY_SIZE]; // Array to store integers
 
     int index = 2;
+    int res = 0;
     bool isFirstArray = true;
 
     // Add 0x0 to the first position of the array
@@ -137,7 +152,7 @@ void send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
 
         if (index == ARRAY_SIZE) { // If array is filled
             // Call hid_write function with the array
-            hid_write(device, array, ARRAY_SIZE);
+            res = hid_write(device, array, ARRAY_SIZE);
             hid_error(device);
 
             // Reset index for next array
@@ -153,6 +168,10 @@ void send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
             array[i] = 0x0;
         }
         // Call hid_write with the remaining integers
-        hid_write(device, array, ARRAY_SIZE);
+        res = hid_write(device, array, ARRAY_SIZE);
     }
+    if (res < 0) {
+        return -1;
+    }
+    return 0;
 }
