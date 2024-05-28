@@ -1,6 +1,7 @@
-# rs5x4 host rewrite in C++!
+# rs5x4 host rewritten in C++
 
 python host kept dying and freezing all devices
+python version still in python branch
 
 # Usage
 download the release zip and extract it to a folder. Edit the spotifykeys.txt file with your own values from spotify's dashboard. then just run the exe
