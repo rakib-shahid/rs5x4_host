@@ -51,7 +51,7 @@ int send_track_string(bool is_playing, hid_device *handle, unsigned char *data, 
     //     array[i] = test[i - 3];
     // }
     // copy the data into the array
-    for (int i = 0; i < 18; i++) {
+    for (int i = 0; i < length; i++) {
         // check if the data is a music note
 
         // print out indices for each

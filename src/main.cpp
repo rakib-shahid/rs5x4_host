@@ -17,6 +17,8 @@
 #include "hidsend.h"
 #include "art.h"
 
+#define text_array_len 20
+
 // Store track info
 struct Track {
     bool is_playing = false;
@@ -28,34 +30,49 @@ struct Track {
     vector<unsigned char> song_string_vector;
 };
 
+bool music_symbol_in_array(unsigned char* input, size_t output_length){
+    for (int i = 0; i < output_length-2; i++){
+        if (input[i] == 0xE2){
+            return true;
+        }
+    }
+    return false;
+}
+
 void cycle_vector(int* index, const std::vector<unsigned char>& input, unsigned char* output, size_t output_length) {
     size_t input_length = input.size();
+    if ((*index) % input_length == 0){
+        (*index) = 0;
+    }
+    int effective_index = *index;
+    bool long_array = false;
 
-    // Ensure the output array is large enough
-    if (output_length < 1) return;
-
-    if (input_length <= output_length) {
-        // If the input vector is shorter than or equal to output_length characters, copy the entire vector
+    // copy vector directly to array if it fits
+    if (input_length <= output_length){
         for (size_t i = 0; i < input_length; ++i) {
             output[i] = input[i];
         }
-        // Fill the rest of the output array with spaces
-        for (size_t i = input_length; i < output_length; ++i) {
-            output[i] = ' ';
+        
+    }
+
+    else {
+        // skip if the music note is being cycled
+        if (effective_index == 1){
+            effective_index += 2;
+            (*index)+=2;
         }
-    } else {
-        // Calculate the effective starting position after rotation
-        int effective_index = *index % input_length;
-
-        // Copy the next output_length characters to the output array
+        
         for (size_t i = 0; i < output_length; ++i) {
-            // Calculate the actual position in the input vector, considering the rotation
             size_t pos = (effective_index + i) % input_length;
-
-            // Copy from the input vector
             output[i] = input[pos];
         }
-
+        
+        if (!(music_symbol_in_array(output,output_length))){
+            output[output_length-1] = ' ';
+            output[output_length-2] = ' ';
+        }
+            
+        
         // Increment the index
         (*index)++;
     }
@@ -111,11 +128,10 @@ int main() {
     int pid = 0x0753;
     int res = 0;
     int song_string_index = 0;
+    // unsure if mutex is necessary, but better thread safe than thread sorry
     std::mutex mutex; 
     hid_device* device = open_keyboard(vid, pid);
-
-    unsigned char song_string[18];
-    // print if device is null
+    unsigned char song_string[text_array_len];
     
     // Create a thread that constantly updates the track struct
     std::thread update_track_thread([&]() {
@@ -135,7 +151,7 @@ int main() {
                     track.artist_name = response["item"]["artists"][0]["name"];
                     track.image_url = response["item"]["album"]["images"][0]["url"];
                     
-                    track.full_track_name = u8" " + track.artist_name + " - " + track.track_name;
+                    track.full_track_name = u8" " + track.artist_name + " - " + track.track_name + " ";
                     track.full_track_name = filter_string(track.full_track_name);
                     // std::cout << track.full_track_name << std::endl;
                     
@@ -184,7 +200,7 @@ int main() {
         }
     });
 
-    // Create a separate thread that prints out the track info every 1/3 of a second
+    // Create a separate thread that send track string to the device
     std::thread update_device_thread([&]() {
         while (true) {
             try
@@ -193,20 +209,20 @@ int main() {
                 // // print out the index
                 // std::cout << "Index: " << song_string_index << std::endl;
                 // // print out the song_string array
-                // for (int i = 0; i < 18; i++) {
+                // for (int i = 0; i < text_array_len; i++) {
                 //     std::cout << song_string[i];
                 // }
                 // std::cout << std::endl;
                 // Check if new track is different from old track
                 if (track.full_track_name != old_track.full_track_name) {
-                    res = send_track_string(true, device, song_string, 18);
+                    res = send_track_string(true, device, song_string, text_array_len);
                     if (res < 0) {
                         std::cout << "Unable to send track string." << std::endl;
                         device = open_keyboard(vid, pid);
                     }
                     else {
                         mutex.lock();
-                        cycle_vector(&song_string_index, track.song_string_vector, song_string, 18);
+                        cycle_vector(&song_string_index, track.song_string_vector, song_string, text_array_len);
                         mutex.unlock();
                     }
                     redraw = true;
@@ -221,14 +237,14 @@ int main() {
                         }
                         redraw = true;
                     }
-                    res = send_track_string(true, device, song_string, 18);
+                    res = send_track_string(true, device, song_string, text_array_len);
                     if (res < 0) {
                         std::cout << "Unable to send track string." << std::endl;
                         device = open_keyboard(vid, pid);
                     }
                     else {
                         mutex.lock();
-                        cycle_vector(&song_string_index, track.song_string_vector, song_string, 18);
+                        cycle_vector(&song_string_index, track.song_string_vector, song_string, text_array_len);
                         mutex.unlock();
                     }
                 }
@@ -251,10 +267,10 @@ int main() {
                         device = open_keyboard(vid, pid);
                     }
                     // Fill song_string with spaces
-                    for (int i = 0; i < 18; i++) {
+                    for (int i = 0; i < text_array_len; i++) {
                         song_string[i] = 0x20;
                     }
-                    res = send_track_string(false, device, song_string, 18);
+                    res = send_track_string(false, device, song_string, text_array_len);
                     if (res < 0) {
                         std::cout << "Unable to send track string." << std::endl;
                         device = open_keyboard(vid, pid);
