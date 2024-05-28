@@ -1,6 +1,7 @@
 # rs5x4 host rewritten in C++
 
 python host kept dying and freezing all devices
+
 python version still in python branch
 
 # Usage
