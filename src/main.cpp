@@ -89,15 +89,7 @@ std::string filter_string(const std::string& input) {
         if (std::isprint(ch) && ch <= 126) {
             output += ch;
         }
-        // else if (ch == 0xE2 && (i + 2 < length) && 
-        //            static_cast<unsigned char>(input[i + 1]) == 0x99 && 
-        //            static_cast<unsigned char>(input[i + 2]) == 0xAB) {
-        //     // Check if it's the music note character (UTF-8 sequence: 0xE2 0x99 0xAB)
-        //     output += 0xE2;
-        //     output += 0x99;
-        //     output += 0xAB;
-        //     i += 2; // Skip the next two bytes
-        // } 
+
         else {
             output += '?';
         }

@@ -10,4 +10,5 @@ python host kept dying and freezing all devices
 - [ ] platform compatibility? figure out how to distribute
 
 # latest changes
+- solved music symbol scrolling, perfect now 🤓
 - solved long string stack corruption (by changing to vector lol)
