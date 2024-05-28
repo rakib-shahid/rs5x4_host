@@ -52,6 +52,9 @@ void cycle_vector(int* index, const std::vector<unsigned char>& input, unsigned 
         for (size_t i = 0; i < input_length; ++i) {
             output[i] = input[i];
         }
+        for (int i = input_length; i < output_length; i++){
+            output[i] = ' ';
+        }
         
     }
 
