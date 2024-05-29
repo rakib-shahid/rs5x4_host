@@ -23,3 +23,10 @@ then just double click start.vbs which will start the host in the background (it
 - packaged working on desktop and laptop
 - solved music symbol scrolling, perfect now 🤓
 - solved long string stack corruption (by changing to vector lol)
+
+
+# Steps for building from source
+
+This is mainly so I don't forget. 
+
+Install CMake, ninja, mingw. Clone repo and install requirements in vcpkg_rf.txt. Run commands in commands.txt
