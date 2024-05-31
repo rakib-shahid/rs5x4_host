@@ -5,3 +5,9 @@ refresh_token.txt
 /build
 spotifykeys.txt
 /logs
+/CMakeFiles
+*.cmake
+CMakeCache.txt
+Makefile
+test
+test.rar
