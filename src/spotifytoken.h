@@ -79,14 +79,22 @@ std::string getAccessToken() {
                            "&response_type=code&redirect_uri=" + redirect_uri +
                            "&scope=user-read-private user-read-email user-read-currently-playing";
 
+#ifdef _WIN32
     std::string command = "start \"\" \"" + auth_url + "\"";
-    system(command.c_str());
+#elif __APPLE__
+    std::string command = "open \"" + auth_url + "\"";
+#else
+    std::string command = "xdg-open \"" + auth_url + "\"";
+#endif
 
+    system(command.c_str());
+    std::cout << "Opened browser, waiting for authorization..." << std::endl;
     std::string authorization_code;
     httplib::Server svr;
     svr.Get("/callback", [&](const httplib::Request& req, httplib::Response& res) {
         if (req.has_param("code")) {
             authorization_code = req.get_param_value("code");
+            std::cout << "authorization_code: " << authorization_code << std::endl;
             res.set_content("<html><body><script>window.close();</script></body></html>", "text/html");
         } else {
             res.set_content("Authorization failed.", "text/plain");
