@@ -129,49 +129,50 @@ hid_device* open_keyboard(int vid, int pid) {
 }
 
 int send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
-    const int ARRAY_SIZE = 32; // Length of the array
-    unsigned char array[ARRAY_SIZE]; // Array to store integers
+    std::cout << "Size of the data: " << data.size() << std::endl;
+    int messages_sent = 0;
+    const int MESSAGE_SIZE = 30; // Payload size per message
+    unsigned char array[MESSAGE_SIZE + 2]; // Array to store integers + 2-byte header
 
     int index = 2;
     int res = 0;
     bool isFirstArray = true;
 
-    // Add 0x0 to the first position of the array
-    array[0] = 0x0;
+    array[0] = 0x0; // Header byte 1
 
     for (size_t i = 0; i < data.size(); ++i) {
         if (isFirstArray) {
-            array[1] = 0xFD;
+            array[1] = 0xFD; // Header byte 2 for the first message
             isFirstArray = false;
         } else {
-            array[1] = 0xEE;
+            array[1] = 0xEE; // Header byte 2 for subsequent messages
         }
 
-        // Convert uint16_t to two bytes and store in the array
-        array[index++] = data[i]; // Lower byte
+        array[index++] = data[i]; // Add data byte
 
-        if (index == ARRAY_SIZE) { // If array is filled
-            // Call hid_write function with the array
-            res = hid_write(device, array, ARRAY_SIZE);
+        if (index == MESSAGE_SIZE + 2) { // If array is filled
+            res = hid_write(device, array, MESSAGE_SIZE + 2); // Send message
+            ++messages_sent;
             hid_error(device);
 
-            // Reset index for next array
-            index = 2;
+            index = 2; // Reset index for next message
         }
     }
 
-    // Check if there are remaining integers
+    // Send any remaining data
     if (index > 2) {
-        array[1] = 0xFC;
-        // Fill the rest of the array with 0s
-        for (int i = index; i < ARRAY_SIZE; ++i) {
-            array[i] = 0x0;
+        array[1] = 0xFC; // Header byte 2 for the last message
+        for (int i = index; i < MESSAGE_SIZE + 2; ++i) {
+            array[i] = 0x0; // Fill the rest with 0s
         }
-        // Call hid_write with the remaining integers
-        res = hid_write(device, array, ARRAY_SIZE);
+        res = hid_write(device, array, MESSAGE_SIZE + 2);
+        ++messages_sent;
     }
+
     if (res < 0) {
         return -1;
     }
+
+    std::cout << "Messages sent: " << messages_sent << std::endl;
     return 0;
 }

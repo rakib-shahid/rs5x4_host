@@ -6,6 +6,8 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
 
+#define img_width 128
+
 std::vector<uint8_t> convertToRGB565(const uint8_t* image_data, int width, int height, int channels) {
     std::vector<uint8_t> rgb565_data;
     rgb565_data.reserve(width * height * 2); // Each pixel will be split into two bytes
@@ -20,9 +22,17 @@ std::vector<uint8_t> convertToRGB565(const uint8_t* image_data, int width, int h
         uint8_t byte1 = rgb565 & 0xFF;         // Lower byte
         uint8_t byte2 = (rgb565 >> 8) & 0xFF;  // Upper byte
 
-        rgb565_data.push_back(byte2);
         rgb565_data.push_back(byte1);
+        rgb565_data.push_back(byte2);
     }
+    // // print out that the conversion was successful
+    // std::cout << "Conversion 1 to RGB565 successful" << std::endl;
+    // // print some of the data to see if it was converted correctly
+    // std::cout << "First 10 bytes of the RGB565 data: ";
+    // for (int i = 0; i < 10; i++) {
+    //     std::cout << std::hex << (int)rgb565_data[i] << " ";
+    // }
+    // std::cout << std::endl;
 
     return rgb565_data;
 }
@@ -44,8 +54,8 @@ std::vector<uint8_t> downloadAndConvertToRGB565(const std::string& url) {
         return {};
     }
 
-    int new_width = 64;
-    int new_height = 64;
+    int new_width = img_width;
+    int new_height = img_width;
     std::vector<uint8_t> resized_image_data(new_width * new_height * 3);
 
     if (!stbir_resize_uint8(image_data, width, height, 0, resized_image_data.data(), new_width, new_height, 0, 3)) {
@@ -54,25 +64,36 @@ std::vector<uint8_t> downloadAndConvertToRGB565(const std::string& url) {
         return {};
     }
 
-    // Create a new buffer for the mirrored image
-    std::vector<uint8_t> mirrored_image_data(new_width * new_height * 3);
+    // // Create a new buffer for the mirrored image
+    // std::vector<uint8_t> mirrored_image_data(new_width * new_height * 3);
 
-    // Mirror the image along the line y=-x
-    for (int y = 0; y < new_height; ++y) {
-        for (int x = 0; x < new_width; ++x) {
-            int src_index = (y * new_width + x) * 3;
-            int dst_index = (x * new_height + y) * 3;
+    // // Mirror the image along the line y=-x
+    // for (int y = 0; y < new_height; ++y) {
+    //     for (int x = 0; x < new_width; ++x) {
+    //         int src_index = (y * new_width + x) * 3;
+    //         int dst_index = (x * new_height + y) * 3;
 
-            mirrored_image_data[dst_index] = resized_image_data[src_index];
-            mirrored_image_data[dst_index + 1] = resized_image_data[src_index + 1];
-            mirrored_image_data[dst_index + 2] = resized_image_data[src_index + 2];
-        }
-    }
+    //         mirrored_image_data[dst_index] = resized_image_data[src_index];
+    //         mirrored_image_data[dst_index + 1] = resized_image_data[src_index + 1];
+    //         mirrored_image_data[dst_index + 2] = resized_image_data[src_index + 2];
+    //     }
+    // }
 
-    std::vector<uint8_t> rgb565_data = convertToRGB565(mirrored_image_data.data(), new_width, new_height, 3);
+    std::vector<uint8_t> rgb565_data = convertToRGB565(resized_image_data.data(), new_width, new_height, 3);
 
     // Free the loaded image data
     stbi_image_free(image_data);
+
+    // // print out that the conversion was successful
+    // std::cout << "Conversion 2 to RGB565 successful" << std::endl;
+    // // print the length of the data
+    // std::cout << "Length of the RGB565 data: " << rgb565_data.size() << std::endl;
+    // print some of the data to see if it was converted correctly
+    // std::cout << "First 10 bytes of the RGB565 data: ";
+    // for (int i = 0; i < 10; i++) {
+    //     std::cout << std::hex << (int)rgb565_data[i] << " ";
+    // }
+    // std::cout << std::endl;
 
     return rgb565_data;
 }

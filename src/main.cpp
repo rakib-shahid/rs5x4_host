@@ -180,6 +180,9 @@ int main() {
                             std::cout << "Unable to send image data." << std::endl;
                             device = open_keyboard(vid, pid);
                         }
+                        // else {
+                        //     std::cout << "Result of sending data: " << res << std::endl;
+                        // }
                     }
                 } else {
                     track.is_playing = false;

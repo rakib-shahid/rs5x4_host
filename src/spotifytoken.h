@@ -81,12 +81,13 @@ std::string getAccessToken() {
 
     std::string command = "start \"\" \"" + auth_url + "\"";
     system(command.c_str());
-
+    std::cout << "opened browser, waiting for authorization..." << std::endl;
     std::string authorization_code;
     httplib::Server svr;
     svr.Get("/callback", [&](const httplib::Request& req, httplib::Response& res) {
         if (req.has_param("code")) {
             authorization_code = req.get_param_value("code");
+            std::cout << "authorization_code: " << authorization_code << std::endl;
             res.set_content("<html><body><script>window.close();</script></body></html>", "text/html");
         } else {
             res.set_content("Authorization failed.", "text/plain");
