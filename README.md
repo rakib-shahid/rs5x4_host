@@ -16,6 +16,10 @@ Edit the spotifykeys.txt file with your own values from spotify's dashboard. ***
 then just double click start.vbs which will start the host in the background (its called test.exe)
 
 # Current Issues / TO-DO
+- [ ] occasional crashing, figure it out
+- [ ] implement threads for sending image with same logic as python (song change = kill image thread and start new one)
+- [ ] if image write fails wait for new device instead of continuing
+- [ ] *this is probably firmware side but occasionally parts of image are horizontally shifted (has to do with image_counter not being incremented by 30 properly between messages)
 - [x] for cycling music note: skip by 3 and include by 3 bytes, (0xE2, 0x99, 0xAB only, no individual bytes)
 - [x] No text scrolling
 - [x] Music symbol not showing properly (♫ → ΓÖ½, some unicode UTF-8 issue) (FOUND FIX, CONVERT SYMBOL TO {0xE2, 0x99, 0xAB} AND SEND)
