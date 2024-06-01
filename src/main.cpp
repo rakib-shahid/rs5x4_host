@@ -127,6 +127,9 @@ int main() {
     std::mutex mutex; 
     hid_device* device = open_keyboard(vid, pid);
     unsigned char song_string[text_array_len];
+
+    // keep a list of all image threads
+    std::vector<std::thread> image_threads;
     
     // Create a thread that constantly updates the track struct
     std::thread update_track_thread([&]() {
@@ -172,17 +175,25 @@ int main() {
                         }
                     // Check if image URL is different from the old track
                     if (track.image_url != old_track.image_url) {
-                        // Download the image and convert it to RGB565 format
-                        std::vector<uint8_t> rgb565_data = downloadAndConvertToRGB565(track.image_url);
-                        // Send the image data to the device
-                        res = send_image_data(device, rgb565_data);
-                        if (res < 0) {
-                            std::cout << "Unable to send image data." << std::endl;
-                            device = open_keyboard(vid, pid);
+                        // try to kill all image threads
+                        for (auto& thread : image_threads) {
+                            if (thread.joinable()) {
+                                thread.join();
+                            }
                         }
-                        // else {
-                        //     std::cout << "Result of sending data: " << res << std::endl;
-                        // }
+                        // create a new image thread
+                        image_threads.push_back(std::thread([&, track](){
+                            // Download the image and convert it to RGB565 format
+                            std::vector<uint8_t> rgb565_data = downloadAndConvertToRGB565(track.image_url);
+                            // Send the image data to the device
+                            res = send_image_data(device, rgb565_data);
+                            if (res < 0) {
+                                std::cout << "Unable to send image data." << std::endl;
+                                device = open_keyboard(vid, pid);
+                            }
+                            
+                        }));
+                        
                     }
                 } else {
                     track.is_playing = false;

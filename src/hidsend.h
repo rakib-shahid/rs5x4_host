@@ -164,7 +164,9 @@ int send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
             //     }
             //     std::cout << std::endl;
             // }
-
+            if (res < 0) {
+                return -1;
+            }
             ++messages_sent;
             hid_error(device);
 
@@ -185,14 +187,14 @@ int send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
         // }
         // std::cout << std::endl;
         res = hid_write(device, array, 32);
-
+        if (res < 0) {
+            return -1;
+        }
 
         ++messages_sent;
     }
 
-    if (res < 0) {
-        return -1;
-    }
+    
 
     // std::cout << "Messages sent: " << messages_sent << std::endl;
     return 0;
