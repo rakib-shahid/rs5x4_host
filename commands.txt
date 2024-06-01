@@ -1,2 +1,7 @@
+// windows
 cmake .. -DCMAKE_TOOLCHAIN_FILE=C:/Users/rakib/Documents/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build . --config Release
+
+// wsl/linux
+cmake -B .. -S .. "-DCMAKE_TOOLCHAIN_FILE=/home/rakibshahid/vcpkg/scripts/buildsystems/vcpkg.cmake"
+cmake --build ..
