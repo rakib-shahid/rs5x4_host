@@ -8,6 +8,28 @@
 
 #define img_width 128
 
+void writeVectorToFile(const std::vector<uint8_t>& data, const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return;
+    }
+
+    for (size_t i = 0; i < data.size(); ++i) {
+        uint8_t value = data[i];
+
+        file << static_cast<int>(value);
+        if (i != data.size() - 1) {
+            file << ",";
+        }
+    }
+
+    file.close();
+    if (!file.good()) {
+        std::cerr << "Error occurred while writing to file: " << filename << std::endl;
+    }
+}
+
 std::vector<uint8_t> convertToRGB565(const uint8_t* image_data, int width, int height, int channels) {
     std::vector<uint8_t> rgb565_data;
     rgb565_data.reserve(width * height * 2); // Each pixel will be split into two bytes
@@ -22,8 +44,8 @@ std::vector<uint8_t> convertToRGB565(const uint8_t* image_data, int width, int h
         uint8_t byte1 = rgb565 & 0xFF;         // Lower byte
         uint8_t byte2 = (rgb565 >> 8) & 0xFF;  // Upper byte
 
-        rgb565_data.push_back(byte1);
         rgb565_data.push_back(byte2);
+        rgb565_data.push_back(byte1);
     }
     // // print out that the conversion was successful
     // std::cout << "Conversion 1 to RGB565 successful" << std::endl;
@@ -95,27 +117,7 @@ std::vector<uint8_t> downloadAndConvertToRGB565(const std::string& url) {
     // }
     // std::cout << std::endl;
 
+    // writeVectorToFile(rgb565_data, "rgb565_data.txt");
     return rgb565_data;
 }
 
-void writeVectorToFile(const std::vector<uint8_t>& data, const std::string& filename) {
-    std::ofstream file(filename);
-    if (!file) {
-        std::cerr << "Failed to open file: " << filename << std::endl;
-        return;
-    }
-
-    for (size_t i = 0; i < data.size(); ++i) {
-        uint8_t value = data[i];
-
-        file << static_cast<int>(value);
-        if (i != data.size() - 1) {
-            file << ",";
-        }
-    }
-
-    file.close();
-    if (!file.good()) {
-        std::cerr << "Error occurred while writing to file: " << filename << std::endl;
-    }
-}

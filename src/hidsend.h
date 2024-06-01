@@ -118,7 +118,7 @@ hid_device* open_keyboard(int vid, int pid) {
     while (info) {
         // printf("Name: %ls, Usage: %d, Usage Page: %d\n", info->manufacturer_string, info->usage, info->usage_page);
         if (info->usage_page == usage_page && info->usage == usage) {
-            printf("found hid device\n");
+            // printf("found hid device\n");
             device = hid_open_path(info->path);
             break;
         }
@@ -129,29 +129,42 @@ hid_device* open_keyboard(int vid, int pid) {
 }
 
 int send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
-    std::cout << "Size of the data: " << data.size() << std::endl;
+    // std::cout << "Size of the data: " << data.size() << std::endl;
     int messages_sent = 0;
-    const int MESSAGE_SIZE = 30; // Payload size per message
-    unsigned char array[MESSAGE_SIZE + 2]; // Array to store integers + 2-byte header
+    unsigned char array[32]; // Array to store integers + 2-byte header
 
     int index = 2;
     int res = 0;
     bool isFirstArray = true;
+    bool firstArraySent = false;
 
     array[0] = 0x0; // Header byte 1
 
-    for (size_t i = 0; i < data.size(); ++i) {
-        if (isFirstArray) {
-            array[1] = 0xFD; // Header byte 2 for the first message
-            isFirstArray = false;
+    for (size_t i = 0; i < data.size(); i++) {
+        if (!firstArraySent) {
+            array[1] = 0xED; // Header byte 2 for the first message
         } else {
             array[1] = 0xEE; // Header byte 2 for subsequent messages
         }
+        
 
         array[index++] = data[i]; // Add data byte
 
-        if (index == MESSAGE_SIZE + 2) { // If array is filled
-            res = hid_write(device, array, MESSAGE_SIZE + 2); // Send message
+        
+
+        if (index == 32) { // If array is filled
+            if (array[1] == 0xED) {
+                firstArraySent = true;
+            }
+            res = hid_write(device, array, 32); // Send message
+            // if (messages_sent < 4) {
+            //     std::cout << "Array " << messages_sent << " being sent: ";
+            //     for (int i = 0; i < 32; i++) {
+            //         std::cout << (int)array[i] << ",";
+            //     }
+            //     std::cout << std::endl;
+            // }
+
             ++messages_sent;
             hid_error(device);
 
@@ -162,10 +175,18 @@ int send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
     // Send any remaining data
     if (index > 2) {
         array[1] = 0xFC; // Header byte 2 for the last message
-        for (int i = index; i < MESSAGE_SIZE + 2; ++i) {
+        for (int i = index; i < 32; ++i) {
             array[i] = 0x0; // Fill the rest with 0s
         }
-        res = hid_write(device, array, MESSAGE_SIZE + 2);
+        // print out the entire array being sent
+        // std::cout << "Final Array "  << messages_sent << " being sent: ";
+        // for (int i = 0; i < 32; i++) {
+        //     std::cout << (int)array[i] << ",";
+        // }
+        // std::cout << std::endl;
+        res = hid_write(device, array, 32);
+
+
         ++messages_sent;
     }
 
@@ -173,6 +194,6 @@ int send_image_data(hid_device* device, const std::vector<uint8_t>& data) {
         return -1;
     }
 
-    std::cout << "Messages sent: " << messages_sent << std::endl;
+    // std::cout << "Messages sent: " << messages_sent << std::endl;
     return 0;
 }
