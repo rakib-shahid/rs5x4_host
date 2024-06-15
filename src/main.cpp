@@ -20,7 +20,8 @@
 #define text_array_len 20
 
 // Store track info
-struct Track {
+struct Track
+{
     bool is_playing = false;
     int progress_ms = 0;
     std::string track_name;
@@ -30,85 +31,100 @@ struct Track {
     vector<unsigned char> song_string_vector;
 };
 
-bool music_symbol_in_array(unsigned char* input, size_t output_length){
-    for (int i = 0; i < output_length-2; i++){
-        if (input[i] == 0xE2){
+bool music_symbol_in_array(unsigned char *input, size_t output_length)
+{
+    for (int i = 0; i < output_length - 2; i++)
+    {
+        if (input[i] == 0xE2)
+        {
             return true;
         }
     }
     return false;
 }
 
-void cycle_vector(int* index, const std::vector<unsigned char>& input, unsigned char* output, size_t output_length) {
+void cycle_vector(int *index, const std::vector<unsigned char> &input, unsigned char *output, size_t output_length)
+{
     size_t input_length = input.size();
-    if ((*index) % input_length == 0){
+    if ((*index) % input_length == 0)
+    {
         (*index) = 0;
     }
     int effective_index = *index;
     bool long_array = false;
 
     // copy vector directly to array if it fits
-    if (input_length <= output_length){
-        for (size_t i = 0; i < input_length; ++i) {
+    if (input_length <= output_length)
+    {
+        for (size_t i = 0; i < input_length; ++i)
+        {
             output[i] = input[i];
         }
-        for (int i = input_length; i < output_length; i++){
+        for (int i = input_length; i < output_length; i++)
+        {
             output[i] = ' ';
         }
-        
     }
 
-    else {
+    else
+    {
         // skip if the music note is being cycled
-        if (effective_index == 1){
+        if (effective_index == 1)
+        {
             effective_index += 2;
-            (*index)+=2;
+            (*index) += 2;
         }
-        
-        for (size_t i = 0; i < output_length; ++i) {
+
+        for (size_t i = 0; i < output_length; ++i)
+        {
             size_t pos = (effective_index + i) % input_length;
             output[i] = input[pos];
         }
-        
-        if (!(music_symbol_in_array(output,output_length))){
-            output[output_length-1] = ' ';
-            output[output_length-2] = ' ';
+
+        if (!(music_symbol_in_array(output, output_length)))
+        {
+            output[output_length - 1] = ' ';
+            output[output_length - 2] = ' ';
         }
-            
-        
+
         // Increment the index
         (*index)++;
     }
 }
 
-std::string filter_string(const std::string& input) {
+std::string filter_string(const std::string &input)
+{
     std::string output;
     size_t length = input.length();
-    
-    for (size_t i = 0; i < length; ++i) {
+
+    for (size_t i = 0; i < length; ++i)
+    {
         unsigned char ch = static_cast<unsigned char>(input[i]);
 
         // Check if the character is a printable ASCII character (range 32-126)
-        if (std::isprint(ch) && ch <= 126) {
+        if (std::isprint(ch) && ch <= 126)
+        {
             output += ch;
         }
 
-        else {
+        else
+        {
             output += '?';
         }
     }
 
-    
     return output;
 }
 
-
-bool operator==(const Track& lhs, const Track& rhs) {
+bool operator==(const Track &lhs, const Track &rhs)
+{
     return lhs.track_name == rhs.track_name && lhs.artist_name == rhs.artist_name;
 }
 
-int main() {
-    if (!readSpotifyCredentials("spotifykeys.txt")) {
+int main()
+{
+    if (!readSpotifyCredentials("spotifykeys.txt"))
+    {
         std::cout << "Failed to read Spotify credentials." << std::endl;
         return 1;
     }
@@ -124,15 +140,16 @@ int main() {
     int res = 0;
     int song_string_index = 0;
     // unsure if mutex is necessary, but better thread safe than thread sorry
-    std::mutex mutex; 
-    hid_device* device = open_keyboard(vid, pid);
+    std::mutex mutex;
+    hid_device *device = open_keyboard(vid, pid);
     unsigned char song_string[text_array_len];
 
     // keep a list of all image threads
     std::vector<std::thread> image_threads;
-    
+
     // Create a thread that constantly updates the track struct
-    std::thread update_track_thread([&]() {
+    std::thread update_track_thread([&]()
+                                    {
         while (true) {
             try
             {
@@ -198,7 +215,7 @@ int main() {
                 } else {
                     track.is_playing = false;
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(333));
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 old_track = track;
             }
             catch(const std::exception& e)
@@ -206,11 +223,11 @@ int main() {
                 std::cerr << e.what() << '\n';
             }
             
-        }
-    });
+        } });
 
     // Create a separate thread that send track string to the device
-    std::thread update_device_thread([&]() {
+    std::thread update_device_thread([&]()
+                                     {
         while (true) {
             try
             {
@@ -297,8 +314,7 @@ int main() {
                 std::cerr << e.what() << '\n';
             }
             
-        } 
-    });
+        } });
 
     update_track_thread.join();
     update_device_thread.join();
