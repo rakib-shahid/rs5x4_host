@@ -211,7 +211,7 @@ int send_image_data(hid_device *device, const std::vector<uint8_t> &data)
         // std::cout << std::endl;
         res = hid_write(device, array, 33);
         // print res
-        std::cout << "res: " << res << std::endl;
+        // std::cout << "res: " << res << std::endl;
         if (res < 0)
         {
             return -1;

@@ -215,7 +215,7 @@ int main()
                 } else {
                     track.is_playing = false;
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
                 old_track = track;
             }
             catch(const std::exception& e)
