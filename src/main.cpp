@@ -306,7 +306,7 @@ int main()
                     std::cout << "No track currently playing." << std::endl;
                 }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
         
             }
             catch(const std::exception& e)

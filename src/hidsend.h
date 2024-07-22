@@ -219,6 +219,6 @@ int send_image_data(hid_device *device, const std::vector<uint8_t> &data)
         ++messages_sent;
     }
 
-    // std::cout << "Messages sent: " << messages_sent << std::endl;
+    std::cout << "Messages sent: " << messages_sent << std::endl;
     return 0;
 }
